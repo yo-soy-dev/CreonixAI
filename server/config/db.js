@@ -1,0 +1,8 @@
+// server/config/db.js
+import { neon } from "@neondatabase/serverless";
+import dotenv from "dotenv";
+
+dotenv.config(); 
+export const sql = neon(process.env.DATABASE_URL);
+
+console.log("✅ Connected to Neon PostgreSQL using @neondatabase/serverless");
