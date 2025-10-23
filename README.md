@@ -94,12 +94,18 @@ Emails are sent via **Nodemailer** and **Brevo (Sendinblue)** for notifications 
 
 ### 1️⃣ Clone Repository
 ```bash
+# 1. Clone the repository
 git clone https://github.com/yo-soy-dev/ai-saas-platform.git
 cd ai-saas-platform
 
-# Install both frontend and backend dependencies
-npm install
-cd client && npm install
+# 2. Install dependencies
+npm install          # Backend
+cd client
+npm install          # Frontend
+cd ..
+
+# 3. Create a .env file in the backend (server/.env)
+touch server/.env
 
 # Server
 PORT=5000
@@ -130,9 +136,9 @@ EMAIL_PASS=your_email_app_password
 # Brevo (Sendinblue)
 BREVO_API_KEY=your_brevo_api_key
 
-# Start backend
+cd server
 npm run server
+(Make sure server/package.json has a script like "server": "nodemon index.js")
 
-# Start frontend
 cd client
 npm start
