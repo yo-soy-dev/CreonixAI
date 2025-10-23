@@ -8,7 +8,7 @@ A **fully functional AI SaaS application** built with the **PERN stack (PostgreS
 
 This project is a full-stack **AI SaaS platform** where users can sign up, subscribe to premium plans, and access powerful AI tools like article generation, image editing, and resume analysis.
 
-It integrates **Clerk** for authentication & billing, **Neon (Serverless PostgreSQL)** for database, and **Google AI Studio + ClipDrop API** for AI models.  
+It integrates **Clerk** for authentication & billing, **Neon (Serverless PostgreSQL)** for database, and **Google AI Studio + ClipDrop API** for AI models, and Cloudinary for secure media storage.  
 Emails are sent via **Nodemailer** and **Brevo (Sendinblue)** for notifications and confirmations.
 
 ---
@@ -29,6 +29,8 @@ Emails are sent via **Nodemailer** and **Brevo (Sendinblue)** for notifications 
 - **Nodemailer** + **Brevo (Sendinblue)** — email notifications
 - **Google AI Studio API** — AI content & image generation
 - **ClipDrop API** — background removal & object removal in images
+- **Multer** — file uploads (images, resumes)
+- **Cloudinary** — cloud storage for uploaded files
 
 ---
 
@@ -74,6 +76,12 @@ Emails are sent via **Nodemailer** and **Brevo (Sendinblue)** for notifications 
 
 ---
 
+## 📁 File Uploads & Media Storage
+
+- **Multer** handles file uploads from frontend (images, resumes)
+- **Cloudinary** stores uploaded files securely in the cloud
+- Works seamlessly with AI tools for background/object removal and resume analysis
+
 ## ✉️ Email Notifications
 
 - **Nodemailer** used for transactional emails (verification, alerts)
@@ -109,6 +117,11 @@ GOOGLE_AI_API_KEY=your_google_ai_studio_api_key
 
 # ClipDrop API
 CLIPDROP_API_KEY=your_clipdrop_api_key
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
 # Email (Nodemailer)
 EMAIL_USER=your_email@gmail.com
