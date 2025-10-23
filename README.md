@@ -98,14 +98,12 @@ Emails are sent via **Nodemailer** and **Brevo (Sendinblue)** for notifications 
 git clone https://github.com/yo-soy-dev/AI-Saas-App.git
 cd ai-saas-platform
 
-```bash
 # 2. Install dependencies
 npm install          # Backend
 cd client
 npm install          # Frontend
 cd ..
 
-```bash
 # 3. Create a .env file in the backend (server/.env)
 touch server/.env
 
