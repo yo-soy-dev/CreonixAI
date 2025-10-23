@@ -8,7 +8,7 @@ A **fully functional AI SaaS application** built with the **PERN stack (PostgreS
 
 This project is a full-stack **AI SaaS platform** where users can sign up, subscribe to premium plans, and access powerful AI tools like article generation, image editing, and resume analysis.
 
-It integrates **Clerk** for authentication & billing, **Neon (Serverless PostgreSQL)** for database, and **Google AI Studio** for AI models.  
+It integrates **Clerk** for authentication & billing, **Neon (Serverless PostgreSQL)** for database, and **Google AI Studio + ClipDrop API** for AI models.  
 Emails are sent via **Nodemailer** and **Brevo (Sendinblue)** for notifications and confirmations.
 
 ---
@@ -28,6 +28,7 @@ Emails are sent via **Nodemailer** and **Brevo (Sendinblue)** for notifications 
 - **PostgreSQL (Neon)** — serverless database
 - **Nodemailer** + **Brevo (Sendinblue)** — email notifications
 - **Google AI Studio API** — AI content & image generation
+- **ClipDrop API** — background removal & object removal in images
 
 ---
 
@@ -57,16 +58,19 @@ Emails are sent via **Nodemailer** and **Brevo (Sendinblue)** for notifications 
 
 #### 🖼️ Image Generator
 - Input: Text prompt  
-- Output: AI-generated image using Google AI Studio
+- Output: AI-generated image
 
 #### 🧹 Background Remover
 - Upload an image → Get transparent background version
+- Perfect for social media, presentations, and graphics
 
 #### 🎯 Image Object Remover
 - Upload image → Describe object → AI removes it automatically
+- Ideal for editing product images or removing unwanted elements
 
 #### 📄 Resume Analyzer
 - Upload your resume → AI provides detailed analysis and feedback
+- Insights include formatting, readability, and skill optimization
 
 ---
 
@@ -103,9 +107,14 @@ CLERK_SECRET_KEY=your_clerk_secret_key
 # Google AI
 GOOGLE_AI_API_KEY=your_google_ai_studio_api_key
 
-# Email
+# ClipDrop API
+CLIPDROP_API_KEY=your_clipdrop_api_key
+
+# Email (Nodemailer)
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_email_app_password
+
+# Brevo (Sendinblue)
 BREVO_API_KEY=your_brevo_api_key
 
 # Start backend
