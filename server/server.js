@@ -23,6 +23,7 @@ app.get("/", (req, res) => {
 
 app.use(requireAuth());
 
+
 app.use('/api/ai', aiRouter)
 app.use('/api/user', userRouter)
 

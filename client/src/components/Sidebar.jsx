@@ -13,6 +13,8 @@ import {
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
+
+
 const navItems = [
     { to: '/ai', label: 'Dashboard', Icon: House },
     { to: '/ai/write-article', label: 'Write Article', Icon: SquarePen },
@@ -29,6 +31,8 @@ const Sidebar = ({ sidebar, setSidebar }) => {
     const { signOut, openUserProfile } = useClerk()
 
     if (!isLoaded || !user) return null
+
+
 
     return (
         <div
