@@ -1,4 +1,4 @@
-# SOY-YO DEV AI SaaS Platform
+# 🤖 CreonixAI — AI-Powered SaaS Platform
 
 A production-ready **AI SaaS platform** built on the **PERN stack (PostgreSQL, Express, React, Node.js)**, delivering modern AI-powered tools, secure authentication, subscription billing, and automated email workflows.
 
