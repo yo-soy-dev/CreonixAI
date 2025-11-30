@@ -2,13 +2,27 @@ import React from 'react'
 import { assets } from '../assets/assets'
 
 const Footer = () => {
-  return (
-   <footer className="px-6 md:px-16 lg:px-24 xl:px-32 pt-8 w-full text-gray-500 mt-100">
+
+    return (
+        <footer className="px-6 md:px-16 lg:px-24 xl:px-32 pt-8 w-full text-gray-500 mt-100">
+
             <div className="flex flex-col md:flex-row justify-between w-full gap-10 border-b border-gray-500/30 pb-6">
                 <div className="md:max-w-96">
-                    <img className='h-30' src={assets.logo} alt="logo" />
+                    {/* <img className='h-30' src={assets.logo} alt="logo" /> */}
+                    <h1
+                        className="
+                        text-xl sm:text-2xl font-bold tracking-wide cursor-pointer
+                        bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent
+                        drop-shadow-[0_0_12px_rgba(56,189,248,0.7)]
+                        inline-block
+                        "
+                    >
+                        CreonixAI
+                    </h1>
+
+
                     <p className="mt-6 text-sm">
-                       Say Goodbye to Creative Blocks. <br /> Meet Soy-Yo Dev AI — your AI-powered sidekick for writing, designing, and getting things done. Fast. Fun. Flawless.
+                        Say Goodbye to Creative Blocks. <br /> Meet CreonixAI — your AI-powered sidekick for writing, designing, and getting things done. Fast. Fun. Flawless.
                     </p>
                 </div>
                 <div className="flex-1 flex items-start md:justify-end gap-20">
@@ -37,7 +51,7 @@ const Footer = () => {
                 Copyright 2025 © Soy-Yo Dev. All Right Reserved.
             </p>
         </footer>
-  )
+    )
 }
 
 export default Footer
