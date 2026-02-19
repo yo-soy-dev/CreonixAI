@@ -311,10 +311,12 @@ export const generateBlogTitle = async (req, res) => {
           { role: "assistant", content },
           { role: "user", content: "Complete the title only." },
         ],
-        max_tokens: 20,
+        max_tokens: 30,
       });
 
-      content += continuation.choices[0].message.content;
+      const extra = continuation.choices?.[0]?.message?.content || "";
+
+     content = (content || "") + extra;
     }
 
     content = content.replace(/["]/g, "").trim();
