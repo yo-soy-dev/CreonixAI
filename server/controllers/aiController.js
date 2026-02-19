@@ -282,8 +282,8 @@ export const generateBlogTitle = async (req, res) => {
       });
     }
 
-    // ✅ Strong structured prompt
-    const response = await AI.chat.completions.create({
+    // ✅ STEP 1: Generate titles
+    let response = await AI.chat.completions.create({
       model: "gemini-2.5-flash",
       messages: [
         {
@@ -293,13 +293,14 @@ You are a professional SEO blog title generator.
 
 Generate EXACTLY 5 blog titles.
 
-STRICT RULES:
-- Each title MUST be complete (no cut-off)
-- Each title MUST be on a new line
-- DO NOT number them
-- DO NOT use quotes
-- Max 12–15 words each
-- Make them engaging, emotional, and SEO optimized
+RULES:
+- Each title MUST be complete (never cut words)
+- Each title on new line
+- No numbering
+- No quotes
+- 10–15 words each
+- Highly engaging and SEO optimized
+- If tokens end, COMPLETE the current title first
 `,
         },
         {
@@ -308,39 +309,60 @@ STRICT RULES:
         },
       ],
       temperature: 0.9,
-      max_tokens: 200,
+      max_tokens: 500, // 🔥 increased
     });
 
-    let content = response.choices?.[0]?.message?.content || "";
+    let content = response.choices[0].message.content;
+    let finishReason = response.choices[0].finish_reason;
 
-    // ✅ Clean + normalize
-    let titles = content
-      .split("\n")
-      .map((t) => t.trim())
-      .filter((t) => t.length > 5);
-
-    // ✅ Fallback if model fails
-    if (titles.length < 3) {
-      const retry = await AI.chat.completions.create({
+    // ✅ STEP 2: Auto continue if cut
+    while (finishReason === "length") {
+      const continuation = await AI.chat.completions.create({
         model: "gemini-2.5-flash",
         messages: [
           {
             role: "system",
-            content:
-              "Generate 5 complete SEO blog titles. One per line. No numbering.",
+            content: "Continue remaining blog titles. Do not repeat.",
           },
-          { role: "user", content: prompt },
+          {
+            role: "assistant",
+            content: content,
+          },
+          {
+            role: "user",
+            content: "Continue",
+          },
         ],
         max_tokens: 200,
       });
 
-      titles = retry.choices[0].message.content
-        .split("\n")
-        .map((t) => t.trim())
-        .filter(Boolean);
+      content += continuation.choices[0].message.content;
+      finishReason = continuation.choices[0].finish_reason;
     }
 
-    // ✅ Ensure max 5 titles
+    // ✅ STEP 3: Clean titles properly
+    let titles = content
+      .split("\n")
+      .map((t) => t.trim())
+      .filter(
+        (t) =>
+          t.length > 10 &&
+          !t.endsWith(":") &&
+          !t.match(/^[\-\d\.]+$/)
+      );
+
+    // ✅ STEP 4: fallback if AI fails
+    if (titles.length < 3) {
+      titles = [
+        `Ultimate Guide to ${prompt} for Beginners`,
+        `Top Secrets to Master ${prompt} Easily`,
+        `Best Tips and Tricks for ${prompt} in 2026`,
+        `How to Get Started with ${prompt} Step by Step`,
+        `Everything You Need to Know About ${prompt}`,
+      ];
+    }
+
+    // ✅ Only 5 titles
     titles = titles.slice(0, 5);
 
     const finalContent = titles.join("\n");
@@ -360,7 +382,7 @@ STRICT RULES:
       });
     }
 
-    // ✅ Email
+    // ✅ Send email
     const userEmail = await getUserEmail(userId);
     await sendEmail(
       userEmail,
@@ -377,7 +399,6 @@ STRICT RULES:
 
   } catch (error) {
     console.log("BLOG TITLE ERROR:", error);
-
     return res.json({
       success: false,
       message: error.message,
