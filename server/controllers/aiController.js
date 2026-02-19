@@ -204,41 +204,127 @@ Requirements:
 };
 
 
+// export const generateBlogTitle = async (req, res) => {
+//     try {
+//         const { userId } = req.auth();
+//         const { prompt } = req.body;
+//         const plan = req.plan;
+//         const free_usage = req.free_usage;
+
+//         if (plan !== 'premium' && free_usage >= 10) {
+//             return res.json({ success: false, message: "Limit reached. Upgrade to continue." });
+//         }
+
+//         const response = await AI.chat.completions.create({
+//             model: "gemini-2.5-flash",
+//             messages: [
+//                 { role: "user", content: prompt },],
+//             temperature: 0.7,
+//             max_tokens: 100,
+//         });
+
+//         const content = response.choices[0].message.content;
+
+//         await sql`
+//           INSERT INTO creations (user_id, prompt, content, type)
+//           VALUES (${userId}, ${prompt}, ${content}, 'blog-title')
+//         `;
+
+//         if (plan !== 'premium') {
+//             await clerkClient.users.updateUserMetadata(userId, {
+//                 privateMetadata: {
+//                     free_usage: free_usage + 1
+//                 }
+//             });
+//         }
+
+//         const userEmail = await getUserEmail(userId);
+//         await sendEmail(
+//             userEmail,
+//             "📝 Your AI-Generated Blog Title is Ready",
+//             `<h2>Blog Title Result</h2>
+//        <p><strong>Prompt:</strong> ${prompt}</p>
+//        <hr/>
+//        <p>${content}</p>`
+//         );
+
+//         res.json({ success: true, content });
+
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+
+
 export const generateBlogTitle = async (req, res) => {
-    try {
-        const { userId } = req.auth();
-        const { prompt } = req.body;
-        const plan = req.plan;
-        const free_usage = req.free_usage;
+  try {
+    const { userId } = req.auth();
+    const { prompt } = req.body;
+    const plan = req.plan;
+    const free_usage = req.free_usage;
 
-        if (plan !== 'premium' && free_usage >= 10) {
-            return res.json({ success: false, message: "Limit reached. Upgrade to continue." });
-        }
+    if (plan !== "premium" && free_usage >= 10) {
+      return res.json({
+        success: false,
+        message: "Limit reached. Upgrade to continue.",
+      });
+    }
 
-        const response = await AI.chat.completions.create({
-            model: "gemini-2.5-flash",
-            messages: [
-                { role: "user", content: prompt },],
-            temperature: 0.7,
-            max_tokens: 100,
-        });
+    if (!prompt) {
+      return res.json({
+        success: false,
+        message: "Prompt is required.",
+      });
+    }
 
-        const content = response.choices[0].message.content;
+    const response = await AI.chat.completions.create({
+      model: "gemini-2.5-flash",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert SEO copywriter. Generate ONE complete, catchy blog title only. No explanation. No extra text.",
+        },
+        {
+          role: "user",
+          content: `Generate a powerful blog title about: ${prompt}`,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 100, 
+    });
 
-        await sql`
-          INSERT INTO creations (user_id, prompt, content, type)
-          VALUES (${userId}, ${prompt}, ${content}, 'blog-title')
-        `;
+    let content = response.choices[0].message.content.trim();
+    const finishReason = response.choices[0].finish_reason;
 
-        if (plan !== 'premium') {
-            await clerkClient.users.updateUserMetadata(userId, {
-                privateMetadata: {
-                    free_usage: free_usage + 1
-                }
-            });
-        }
+    console.log("Finish Reason:", finishReason);
 
-        const userEmail = await getUserEmail(userId);
+    // Safety continuation (rare case)
+    if (finishReason === "length") {
+      const continuation = await AI.chat.completions.create({
+        model: "gemini-2.5-flash",
+        messages: [
+          { role: "assistant", content },
+          { role: "user", content: "Complete the title only." },
+        ],
+        max_tokens: 20,
+      });
+
+      content += continuation.choices[0].message.content;
+    }
+
+    content = content.replace(/["]/g, "").trim();
+
+    await sql`
+      INSERT INTO creations (user_id, prompt, content, type)
+      VALUES (${userId}, ${prompt}, ${content}, 'blog-title')
+    `;
+
+    const userEmail = await getUserEmail(userId);
         await sendEmail(
             userEmail,
             "📝 Your AI-Generated Blog Title is Ready",
@@ -248,16 +334,21 @@ export const generateBlogTitle = async (req, res) => {
        <p>${content}</p>`
         );
 
-        res.json({ success: true, content });
+    return res.json({ success: true, content });
 
-    } catch (error) {
-        console.log(error.message);
-        res.json({
-            success: false,
-            message: error.message
-        });
-    }
+  } catch (error) {
+    console.log("BLOG TITLE ERROR");
+    console.log("Status:", error.status);
+    console.log("Message:", error.message);
+    console.log("Response:", error.response?.data);
+
+    return res.json({
+      success: false,
+      message: error.message,
+    });
+  }
 };
+
 
 export const generateImage = async (req, res) => {
     try {
