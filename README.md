@@ -155,7 +155,7 @@ Node.js v18+ and accounts for:
 
 **1 — Clone**
 ```bash
-git clone https://github.com/yo-soy-dev/AI-Saas-App.git
+git clone https://github.com/yo-soy-dev/CreonixAI.git
 cd AI-Saas-App
 ```
 
