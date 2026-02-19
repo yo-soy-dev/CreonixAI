@@ -286,16 +286,28 @@ export const generateBlogTitle = async (req, res) => {
       messages: [
         {
           role: "system",
-          content:
-            "You are an expert SEO copywriter. Generate ONE complete, catchy blog title only. No explanation. No extra text.",
+          content: `
+You are an expert SEO copywriter.
+
+Generate exactly 5 blog titles.
+
+Rules:
+- Each title must be on a new line
+- Titles must be complete (no cut-off)
+- No numbering
+- No quotes
+- Max 15 words each
+- Highly engaging and SEO optimized
+`,
         },
         {
           role: "user",
           content: `Generate a powerful blog title about: ${prompt}`,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 100, 
+      temperature: 0.8,
+      max_tokens: 120,
+      stop: ["\n\n"],
     });
 
     let content = response.choices[0].message.content.trim();
