@@ -267,6 +267,7 @@ export const generateBlogTitle = async (req, res) => {
     const plan = req.plan;
     const free_usage = req.free_usage;
 
+    // ✅ Limit check
     if (plan !== "premium" && free_usage >= 10) {
       return res.json({
         success: false,
@@ -274,87 +275,108 @@ export const generateBlogTitle = async (req, res) => {
       });
     }
 
-    if (!prompt) {
+    if (!prompt || !prompt.trim()) {
       return res.json({
         success: false,
         message: "Prompt is required.",
       });
     }
 
+    // ✅ Strong structured prompt
     const response = await AI.chat.completions.create({
       model: "gemini-2.5-flash",
       messages: [
         {
           role: "system",
           content: `
-You are an expert SEO copywriter.
+You are a professional SEO blog title generator.
 
-Generate exactly 5 blog titles.
+Generate EXACTLY 5 blog titles.
 
-Rules:
-- Each title must be on a new line
-- Titles must be complete (no cut-off)
-- No numbering
-- No quotes
-- Max 15 words each
-- Highly engaging and SEO optimized
+STRICT RULES:
+- Each title MUST be complete (no cut-off)
+- Each title MUST be on a new line
+- DO NOT number them
+- DO NOT use quotes
+- Max 12–15 words each
+- Make them engaging, emotional, and SEO optimized
 `,
         },
         {
           role: "user",
-          content: `Generate a powerful blog title about: ${prompt}`,
+          content: prompt,
         },
       ],
-      temperature: 0.8,
+      temperature: 0.9,
       max_tokens: 120,
-      stop: ["\n\n"],
     });
 
-    let content = response.choices[0].message.content.trim();
-    const finishReason = response.choices[0].finish_reason;
+    let content = response.choices?.[0]?.message?.content || "";
 
-    console.log("Finish Reason:", finishReason);
+    // ✅ Clean + normalize
+    let titles = content
+      .split("\n")
+      .map((t) => t.trim())
+      .filter((t) => t.length > 5);
 
-    // Safety continuation (rare case)
-    if (finishReason === "length") {
-      const continuation = await AI.chat.completions.create({
+    // ✅ Fallback if model fails
+    if (titles.length < 3) {
+      const retry = await AI.chat.completions.create({
         model: "gemini-2.5-flash",
         messages: [
-          { role: "assistant", content },
-          { role: "user", content: "Complete the title only." },
+          {
+            role: "system",
+            content:
+              "Generate 5 complete SEO blog titles. One per line. No numbering.",
+          },
+          { role: "user", content: prompt },
         ],
-        max_tokens: 30,
+        max_tokens: 120,
       });
 
-      const extra = continuation.choices?.[0]?.message?.content || "";
-
-     content = (content || "") + extra;
+      titles = retry.choices[0].message.content
+        .split("\n")
+        .map((t) => t.trim())
+        .filter(Boolean);
     }
 
-    content = content.replace(/["]/g, "").trim();
+    // ✅ Ensure max 5 titles
+    titles = titles.slice(0, 5);
 
+    const finalContent = titles.join("\n");
+
+    // ✅ Save to DB
     await sql`
       INSERT INTO creations (user_id, prompt, content, type)
-      VALUES (${userId}, ${prompt}, ${content}, 'blog-title')
+      VALUES (${userId}, ${prompt}, ${finalContent}, 'blog-title')
     `;
 
-    const userEmail = await getUserEmail(userId);
-        await sendEmail(
-            userEmail,
-            "📝 Your AI-Generated Blog Title is Ready",
-            `<h2>Blog Title Result</h2>
-       <p><strong>Prompt:</strong> ${prompt}</p>
-       <hr/>
-       <p>${content}</p>`
-        );
+    // ✅ Update usage
+    if (plan !== "premium") {
+      await clerkClient.users.updateUserMetadata(userId, {
+        privateMetadata: {
+          free_usage: free_usage + 1,
+        },
+      });
+    }
 
-    return res.json({ success: true, content });
+    // ✅ Email
+    const userEmail = await getUserEmail(userId);
+    await sendEmail(
+      userEmail,
+      "📝 Your AI-Generated Blog Titles",
+      `
+      <h2>Your Blog Titles</h2>
+      <p><strong>Prompt:</strong> ${prompt}</p>
+      <hr/>
+      ${titles.map((t) => `<p>• ${t}</p>`).join("")}
+      `
+    );
+
+    return res.json({ success: true, content: finalContent });
 
   } catch (error) {
-    console.log("BLOG TITLE ERROR");
-    console.log("Status:", error.status);
-    console.log("Message:", error.message);
-    console.log("Response:", error.response?.data);
+    console.log("BLOG TITLE ERROR:", error);
 
     return res.json({
       success: false,
