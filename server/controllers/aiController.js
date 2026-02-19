@@ -31,17 +31,60 @@ export const generateArticle = async (req, res) => {
             return res.json({ success: false, message: "Limit reached. Upgrade to continue." });
         }
 
-        const response = await AI.chat.completions.create({
-            model: "gemini-2.5-flash",
-            messages: [
-                {
-                    role: "user",
-                    content: prompt,
-                },
-            ],
-            temperature: 0.7,
-            max_tokens: length,
-        });
+       if (!prompt || !length) {
+      return res.json({
+        success: false,
+        message: "Prompt and length are required.",
+      });
+    }
+
+    // 🔥 Convert words → tokens properly
+    const maxTokens = Math.floor(length * 1.6); 
+    // Example: 1200 words ≈ 1900 tokens
+
+    const response = await AI.chat.completions.create({
+      model: "gemini-2.5-flash",
+      messages: [
+        {
+          role: "system",
+          content: `
+You are a professional SEO blog writer.
+Always generate detailed, long-form, well-structured articles.
+Use proper markdown formatting with headings.
+Never generate short summaries.
+`,
+        },
+        {
+          role: "user",
+          content: `
+Write a comprehensive article about: "${prompt}"
+
+Requirements:
+- Minimum ${length} words
+- Use proper markdown headings (##, ###)
+- Include an engaging introduction
+- Include multiple detailed sections
+- Add examples where appropriate
+- End with a strong conclusion
+- Do NOT write a short answer
+`,
+        },
+      ],
+      temperature: 0.8,
+      max_tokens: maxTokens,
+    });
+
+        // const response = await AI.chat.completions.create({
+        //     model: "gemini-2.5-flash",
+        //     messages: [
+        //         {
+        //             role: "user",
+        //             content: prompt,
+        //         },
+        //     ],
+        //     temperature: 0.7,
+        //     max_tokens: length,
+        // });
 
         const content = response.choices[0].message.content;
 
