@@ -327,6 +327,5 @@ SOFTWARE.
  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 ```
 
-[Report a Bug](https://github.com/yo-soy-dev/CreonixAI/issues) · [Request a Feature](https://github.com/yo-soy-dev/CreonixAI/issues) · [Discussions](https://github.com/yo-soy-dev/CreonixAI/discussions)
-
+[Report a Bug](https://github.com/yo-soy-dev/CreonixAI/issues) · [Request a Feature](https://github.com/yo-soy-dev/CreonixAI/issues)
 </div>
