@@ -268,12 +268,12 @@ export const generateBlogTitle = async (req, res) => {
     const free_usage = req.free_usage;
 
     // ✅ Limit check
-    if (plan !== "premium" && free_usage >= 10) {
-      return res.json({
-        success: false,
-        message: "Limit reached. Upgrade to continue.",
-      });
-    }
+    // if (plan !== "premium" && free_usage >= 10) {
+    //   return res.json({
+    //     success: false,
+    //     message: "Limit reached. Upgrade to continue.",
+    //   });
+    // }
 
     if (!prompt || !prompt.trim()) {
       return res.json({
