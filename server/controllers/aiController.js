@@ -1,588 +1,869 @@
+// import OpenAI from "openai";
+// import { sql } from "../config/db.js";
+// import { clerkClient } from "@clerk/express";
+// import FormData from "form-data";
+// import axios from "axios";
+// import { v2 as cloudinary } from "cloudinary";
+// import fs from 'fs'
+// import { sendEmail } from "../config/nodemailer.js";
+// import { createRequire } from "module";
+// const require = createRequire(import.meta.url);
+
+// const pdfParse = require("pdf-parse");
+
+// const getUserEmail = async (userId) => {
+//     const user = await clerkClient.users.getUser(userId);
+//     return user.emailAddresses[0].emailAddress;
+// };
+// const AI = new OpenAI({
+//     apiKey: process.env.GEMINI_API_KEY,
+//     baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+// });
+
+// // export const generateArticle = async (req, res) => {
+// //     try {
+// //         const { userId } = req.auth();
+// //         const { prompt, length } = req.body;
+// //         const plan = req.plan;
+// //         const free_usage = req.free_usage;
+
+// //         if (plan !== 'premium' && free_usage >= 10) {
+// //             return res.json({ success: false, message: "Limit reached. Upgrade to continue." });
+// //         }
+
+// //         const response = await AI.chat.completions.create({
+// //             model: "gemini-2.5-flash",
+// //             messages: [
+// //                 {
+// //                     role: "user",
+// //                     content: prompt,
+// //                 },
+// //             ],
+// //             temperature: 0.7,
+// //             max_tokens: length,
+// //         });
+
+// //         const content = response.choices[0].message.content;
+
+        
+
+// //         await sql`
+// //           INSERT INTO creations (user_id, prompt, content, type)
+// //           VALUES (${userId}, ${prompt}, ${content}, 'article')
+// //         `;
+
+// //         if (plan !== 'premium') {
+// //             await clerkClient.users.updateUserMetadata(userId, {
+// //                 privateMetadata: {
+// //                     free_usage: free_usage + 1
+// //                 }
+// //             });
+// //         }
+
+// //         const userEmail = await getUserEmail(userId);
+// //         await sendEmail(
+// //             userEmail,
+// //             "📝 Your AI-Generated Article is Ready",
+// //             `<h2>Your Article</h2>
+// //        <p><strong>Prompt:</strong> ${prompt}</p>
+// //        <hr/>
+// //        <p>${content}</p>`
+// //         );
+
+// //         res.json({ success: true, content });
+
+// //     } catch (error) {
+// //         console.log(error.message);
+// //         res.json({
+// //             success: false,
+// //             message: error.message
+// //         });
+// //     }
+// // };
+
+// export const generateArticle = async (req, res) => {
+//   try {
+//     const { userId } = req.auth();
+//     const { prompt, length } = req.body;
+//     const plan = req.plan;
+//     const free_usage = req.free_usage;
+
+//     if (plan !== "premium" && free_usage >= 10) {
+//       return res.json({
+//         success: false,
+//         message: "Limit reached. Upgrade to continue.",
+//       });
+//     }
+
+//     if (!prompt || !length) {
+//       return res.json({
+//         success: false,
+//         message: "Prompt and length are required.",
+//       });
+//     }
+
+//     // ✅ Safe token calculation (max 8k)
+//     const maxTokens = Math.min(Math.floor(length * 3), 8000);
+
+//     const baseMessages = [
+//       {
+//         role: "system",
+//         content: `
+// You are a professional SEO blog writer.
+// Generate long-form, well-structured markdown articles.
+// Never stop mid sentence.
+// Never summarize unless asked.
+// `,
+//       },
+//       {
+//         role: "user",
+//         content: `
+// Write a comprehensive article about: "${prompt}"
+
+// Requirements:
+// - Minimum ${length} words
+// - Use proper markdown headings
+// - Engaging introduction
+// - Detailed sections
+// - Practical examples
+// - Strong conclusion
+// `,
+//       },
+//     ];
+
+//     let response = await AI.chat.completions.create({
+//       model: "gemini-2.5-flash",
+//       messages: baseMessages,
+//       temperature: 0.8,
+//       max_tokens: maxTokens,
+//     });
+
+//     let content = response.choices[0].message.content;
+//     let finishReason = response.choices[0].finish_reason;
+
+//     // ✅ Auto-continue until fully complete
+//     while (finishReason === "length") {
+//       const continuation = await AI.chat.completions.create({
+//         model: "gemini-2.5-flash",
+//         messages: [
+//           {
+//             role: "system",
+//             content:
+//               "Continue the article seamlessly. Do not repeat anything.",
+//           },
+//           {
+//             role: "assistant",
+//             content,
+//           },
+//           {
+//             role: "user",
+//             content: "Continue from exactly where you stopped.",
+//           },
+//         ],
+//         temperature: 0.8,
+//         max_tokens: 2000,
+//       });
+
+//       content += continuation.choices[0].message.content;
+//       finishReason = continuation.choices[0].finish_reason;
+//     }
+
+//     // ✅ Save to DB
+//     await sql`
+//       INSERT INTO creations (user_id, prompt, content, type)
+//       VALUES (${userId}, ${prompt}, ${content}, 'article')
+//     `;
+
+//     if (plan !== "premium") {
+//       await clerkClient.users.updateUserMetadata(userId, {
+//         privateMetadata: {
+//           free_usage: free_usage + 1,
+//         },
+//       });
+//     }
+
+//     const userEmail = await getUserEmail(userId);
+
+//     await sendEmail(
+//       userEmail,
+//       "📝 Your AI-Generated Article is Ready",
+//       `<h2>Your Article</h2>
+//        <p><strong>Prompt:</strong> ${prompt}</p>
+//        <hr/>
+//        <div>${content}</div>`
+//     );
+
+//     return res.json({ success: true, content });
+//   } catch (error) {
+//     console.log(error);
+//     return res.json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+
+// // export const generateBlogTitle = async (req, res) => {
+// //     try {
+// //         const { userId } = req.auth();
+// //         const { prompt } = req.body;
+// //         const plan = req.plan;
+// //         const free_usage = req.free_usage;
+
+// //         if (plan !== 'premium' && free_usage >= 10) {
+// //             return res.json({ success: false, message: "Limit reached. Upgrade to continue." });
+// //         }
+
+// //         const response = await AI.chat.completions.create({
+// //             model: "gemini-2.5-flash",
+// //             messages: [
+// //                 { role: "user", content: prompt },],
+// //             temperature: 0.7,
+// //             max_tokens: 100,
+// //         });
+
+// //         const content = response.choices[0].message.content;
+
+// //         await sql`
+// //           INSERT INTO creations (user_id, prompt, content, type)
+// //           VALUES (${userId}, ${prompt}, ${content}, 'blog-title')
+// //         `;
+
+// //         if (plan !== 'premium') {
+// //             await clerkClient.users.updateUserMetadata(userId, {
+// //                 privateMetadata: {
+// //                     free_usage: free_usage + 1
+// //                 }
+// //             });
+// //         }
+
+// //         const userEmail = await getUserEmail(userId);
+// //         await sendEmail(
+// //             userEmail,
+// //             "📝 Your AI-Generated Blog Title is Ready",
+// //             `<h2>Blog Title Result</h2>
+// //        <p><strong>Prompt:</strong> ${prompt}</p>
+// //        <hr/>
+// //        <p>${content}</p>`
+// //         );
+
+// //         res.json({ success: true, content });
+
+// //     } catch (error) {
+// //         console.log(error.message);
+// //         res.json({
+// //             success: false,
+// //             message: error.message
+// //         });
+// //     }
+// // };
+
+
+// export const generateBlogTitle = async (req, res) => {
+//   try {
+//     const { userId } = req.auth();
+//     const { prompt } = req.body;
+//     const plan = req.plan;
+//     const free_usage = req.free_usage;
+
+//     // ✅ Limit check
+//     // if (plan !== "premium" && free_usage >= 10) {
+//     //   return res.json({
+//     //     success: false,
+//     //     message: "Limit reached. Upgrade to continue.",
+//     //   });
+//     // }
+
+//     if (!prompt || !prompt.trim()) {
+//       return res.json({
+//         success: false,
+//         message: "Prompt is required.",
+//       });
+//     }
+
+//     // ✅ STEP 1: Generate titles
+//     let response = await AI.chat.completions.create({
+//       model: "gemini-2.5-flash",
+//       messages: [
+//         {
+//           role: "system",
+//           content: `
+// You are a professional SEO blog title generator.
+
+// Generate EXACTLY 5 blog titles.
+
+// RULES:
+// - Each title MUST be complete (never cut words)
+// - Each title on new line
+// - No numbering
+// - No quotes
+// - 10–15 words each
+// - Highly engaging and SEO optimized
+// - If tokens end, COMPLETE the current title first
+// `,
+//         },
+//         {
+//           role: "user",
+//           content: prompt,
+//         },
+//       ],
+//       temperature: 0.9,
+//       max_tokens: 500, // 🔥 increased
+//     });
+
+//     let content = response.choices[0].message.content;
+//     let finishReason = response.choices[0].finish_reason;
+
+//     // ✅ STEP 2: Auto continue if cut
+//     while (finishReason === "length") {
+//       const continuation = await AI.chat.completions.create({
+//         model: "gemini-2.5-flash",
+//         messages: [
+//           {
+//             role: "system",
+//             content: "Continue remaining blog titles. Do not repeat.",
+//           },
+//           {
+//             role: "assistant",
+//             content: content,
+//           },
+//           {
+//             role: "user",
+//             content: "Continue",
+//           },
+//         ],
+//         max_tokens: 200,
+//       });
+
+//       content += continuation.choices[0].message.content;
+//       finishReason = continuation.choices[0].finish_reason;
+//     }
+
+//     // ✅ STEP 3: Clean titles properly
+//     let titles = content
+//       .split("\n")
+//       .map((t) => t.trim())
+//       .filter(
+//         (t) =>
+//           t.length > 10 &&
+//           !t.endsWith(":") &&
+//           !t.match(/^[\-\d\.]+$/)
+//       );
+
+//     // ✅ STEP 4: fallback if AI fails
+//     if (titles.length < 3) {
+//       titles = [
+//         `Ultimate Guide to ${prompt} for Beginners`,
+//         `Top Secrets to Master ${prompt} Easily`,
+//         `Best Tips and Tricks for ${prompt} in 2026`,
+//         `How to Get Started with ${prompt} Step by Step`,
+//         `Everything You Need to Know About ${prompt}`,
+//       ];
+//     }
+
+//     // ✅ Only 5 titles
+//     titles = titles.slice(0, 5);
+
+//     const finalContent = titles.join("\n");
+
+//     // ✅ Save to DB
+//     await sql`
+//       INSERT INTO creations (user_id, prompt, content, type)
+//       VALUES (${userId}, ${prompt}, ${finalContent}, 'blog-title')
+//     `;
+
+//     // ✅ Update usage
+//     if (plan !== "premium") {
+//       await clerkClient.users.updateUserMetadata(userId, {
+//         privateMetadata: {
+//           free_usage: free_usage + 1,
+//         },
+//       });
+//     }
+
+//     // ✅ Send email
+//     const userEmail = await getUserEmail(userId);
+//     await sendEmail(
+//       userEmail,
+//       "📝 Your AI-Generated Blog Titles",
+//       `
+//       <h2>Your Blog Titles</h2>
+//       <p><strong>Prompt:</strong> ${prompt}</p>
+//       <hr/>
+//       ${titles.map((t) => `<p>• ${t}</p>`).join("")}
+//       `
+//     );
+
+//     return res.json({ success: true, content: finalContent });
+
+//   } catch (error) {
+//     console.log("BLOG TITLE ERROR:", error);
+//     return res.json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+
+// export const generateImage = async (req, res) => {
+//     try {
+//         const { userId } = req.auth();
+//         const { prompt, publish } = req.body;
+//         const plan = req.plan;
+//         const free_usage = req.free_usage;
+
+//         if (plan !== 'premium' && free_usage >= 10) {
+//             return res.json({ success: false, message: "This feature is only available for premium subscriptions" });
+//         }
+
+//         const formData = new FormData()
+//         formData.append('prompt', prompt)
+//         const { data } = await axios.post("https://clipdrop-api.co/text-to-image/v1", formData, {
+//             headers: { 'x-api-key': process.env.CLIPDROP_API_KEY, },
+//             responseType: "arraybuffer",
+//         })
+
+//         const base64Image = `data:image/png;base64,${Buffer.from(data, 'binary').toString('base64')}`;
+
+//         const { secure_url } = await cloudinary.uploader.upload(base64Image)
+
+//         await sql` INSERT INTO creations (user_id, prompt, content, type, publish)
+// VALUES (${userId}, ${prompt}, ${secure_url}, 'image', ${publish ?? false})
+// `;
+
+//         const userEmail = await getUserEmail(userId);
+//         await sendEmail(
+//             userEmail,
+//             "🖼️ Your AI-Generated Image is Ready",
+//             `<h2>Your Image</h2>
+//        <p><strong>Prompt:</strong> ${prompt}</p>
+//        <img src="${secure_url}" />`
+//         );
+
+//         res.json({ success: true, content: secure_url });
+
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+// export const removeImageBackground = async (req, res) => {
+//     try {
+//         const { userId } = req.auth();
+//         const image = req.file;
+//         const plan = req.plan;
+//         const free_usage = req.free_usage;
+
+//         if (plan !== 'premium' && free_usage >= 10) {
+//             return res.json({ success: false, message: "This feature is only available for premium subscriptions" });
+//         }
+
+//         const { secure_url } = await cloudinary.uploader.upload(image.path, {
+//             transformation: [
+//                 {
+//                     effect: 'background_removal',
+//                     background_removal: 'remove_the_background'
+//                 }
+//             ]
+//         })
+
+//         await sql` INSERT INTO creations (user_id, prompt, content, type)
+// VALUES (${userId}, 'Remove background from image', ${secure_url}, 'image')
+// `;
+
+
+//         res.json({ success: true, content: secure_url });
+
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+// export const removeImageObject = async (req, res) => {
+//     try {
+//         const { userId } = req.auth();
+//         const { object } = req.body;
+//         const image = req.file;
+//         const plan = req.plan;
+//         const free_usage = req.free_usage;
+
+//         if (plan !== 'premium' && free_usage >= 10) {
+//             return res.json({ success: false, message: "This feature is only available for premium subscriptions" });
+//         }
+
+
+
+//         const { public_id } = await cloudinary.uploader.upload(image.path)
+
+//         const imageUrl = cloudinary.url(public_id, {
+//             transformation: [{ effect: `gen_remove:${object}` }],
+//             resource_type: 'image'
+//         })
+
+//         await sql` INSERT INTO creations (user_id, prompt, content, type)
+// VALUES (${userId}, ${`Removed ${object} from image`}, ${imageUrl}, 'image')
+// `;
+
+//         res.json({ success: true, content: imageUrl })
+
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+
+// export const resumeReview = async (req, res) => {
+//     try {
+//         const { userId } = req.auth();
+//         const resume = req.file;
+//         const plan = req.plan;
+//         const free_usage = req.free_usage;
+
+
+//         if (plan !== 'premium' && free_usage >= 10) {
+//             return res.json({ success: false, message: "This feature is only available for premium subscriptions" });
+//         }
+
+//         if (resume.size > 5 * 1024 * 1024) {
+//             return res.json({ success: false, message: "Resume file size exceeds allowed size (5MB)." })
+//         }
+
+//         const dataBuffer = fs.readFileSync(resume.path)
+//         // const pdfData = await pdf(dataBuffer)
+//         const pdfData = await pdfParse(dataBuffer);
+//         console.log(pdfData.text);
+
+//         const prompt = `Review the following resume and provide constructive
+// feedback on its strengths, weaknesses, and areas for improvement. Resume
+// Content: \n\n${pdfData.text}`
+
+//         const response = await AI.chat.completions.create({
+//             model: "gemini-2.5-flash",
+//             messages: [{ role: "user", content: prompt, }],
+//             temperature: 0.7,
+//             max_tokens: 1000,
+//         });
+
+//         const content = response.choices[0].message.content
+
+//         await sql`
+//   INSERT INTO creations (user_id, prompt, content, type)
+//   VALUES (
+//     ${userId}, 
+//     ${'Review the uploaded resume'}, 
+//     ${content}, 
+//     ${'resume-review'}
+//   )
+// `;
+
+
+//         const userEmail = await getUserEmail(userId);
+//         await sendEmail(
+//             userEmail,
+//             "📄 Your Resume Review is Ready",
+//             `<h2>Resume Review</h2>
+//        <p>${content}</p>`
+//         );
+//         res.json({ success: true, content })
+
+//     } catch (error) {
+//         console.log(error.message);
+//         res.json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+
 import OpenAI from "openai";
 import { sql } from "../config/db.js";
 import { clerkClient } from "@clerk/express";
 import FormData from "form-data";
 import axios from "axios";
 import { v2 as cloudinary } from "cloudinary";
-import fs from 'fs'
+import fs from "fs";
 import { sendEmail } from "../config/nodemailer.js";
 import { createRequire } from "module";
-const require = createRequire(import.meta.url);
 
+const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
 
-const getUserEmail = async (userId) => {
-    const user = await clerkClient.users.getUser(userId);
-    return user.emailAddresses[0].emailAddress;
-};
 const AI = new OpenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/"
+  apiKey: process.env.GEMINI_API_KEY,
+  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
 });
 
-// export const generateArticle = async (req, res) => {
-//     try {
-//         const { userId } = req.auth();
-//         const { prompt, length } = req.body;
-//         const plan = req.plan;
-//         const free_usage = req.free_usage;
+/* -------------------- 🔧 COMMON HELPERS -------------------- */
 
-//         if (plan !== 'premium' && free_usage >= 10) {
-//             return res.json({ success: false, message: "Limit reached. Upgrade to continue." });
-//         }
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-//         const response = await AI.chat.completions.create({
-//             model: "gemini-2.5-flash",
-//             messages: [
-//                 {
-//                     role: "user",
-//                     content: prompt,
-//                 },
-//             ],
-//             temperature: 0.7,
-//             max_tokens: length,
-//         });
+const safeAIRequest = async (config, retries = 2) => {
+  try {
+    return await AI.chat.completions.create(config);
+  } catch (err) {
+    if (err.status === 429 && retries > 0) {
+      await delay(1500);
+      return safeAIRequest(config, retries - 1);
+    }
+    throw err;
+  }
+};
 
-//         const content = response.choices[0].message.content;
+const checkLimit = (plan, free_usage) => {
+  return plan !== "premium" && free_usage >= 10;
+};
 
-        
+const updateUsage = async (userId, free_usage, plan) => {
+  if (plan !== "premium") {
+    await clerkClient.users.updateUserMetadata(userId, {
+      privateMetadata: { free_usage: free_usage + 1 },
+    });
+  }
+};
 
-//         await sql`
-//           INSERT INTO creations (user_id, prompt, content, type)
-//           VALUES (${userId}, ${prompt}, ${content}, 'article')
-//         `;
+const saveToDB = async (userId, prompt, content, type, publish = false) => {
+  await sql`
+    INSERT INTO creations (user_id, prompt, content, type, publish)
+    VALUES (${userId}, ${prompt}, ${content}, ${type}, ${publish})
+  `;
+};
 
-//         if (plan !== 'premium') {
-//             await clerkClient.users.updateUserMetadata(userId, {
-//                 privateMetadata: {
-//                     free_usage: free_usage + 1
-//                 }
-//             });
-//         }
+const getUserEmail = async (userId) => {
+  const user = await clerkClient.users.getUser(userId);
+  return user.emailAddresses?.[0]?.emailAddress;
+};
 
-//         const userEmail = await getUserEmail(userId);
-//         await sendEmail(
-//             userEmail,
-//             "📝 Your AI-Generated Article is Ready",
-//             `<h2>Your Article</h2>
-//        <p><strong>Prompt:</strong> ${prompt}</p>
-//        <hr/>
-//        <p>${content}</p>`
-//         );
-
-//         res.json({ success: true, content });
-
-//     } catch (error) {
-//         console.log(error.message);
-//         res.json({
-//             success: false,
-//             message: error.message
-//         });
-//     }
-// };
+/* -------------------- ✍️ ARTICLE -------------------- */
 
 export const generateArticle = async (req, res) => {
   try {
     const { userId } = req.auth();
     const { prompt, length } = req.body;
-    const plan = req.plan;
-    const free_usage = req.free_usage;
+    const { plan, free_usage } = req;
 
-    if (plan !== "premium" && free_usage >= 10) {
-      return res.json({
-        success: false,
-        message: "Limit reached. Upgrade to continue.",
-      });
-    }
+    if (!prompt || !length)
+      return res.json({ success: false, message: "Prompt & length required" });
 
-    if (!prompt || !length) {
-      return res.json({
-        success: false,
-        message: "Prompt and length are required.",
-      });
-    }
+    if (checkLimit(plan, free_usage))
+      return res.json({ success: false, message: "Limit reached" });
 
-    // ✅ Safe token calculation (max 8k)
-    const maxTokens = Math.min(Math.floor(length * 3), 8000);
-
-    const baseMessages = [
-      {
-        role: "system",
-        content: `
-You are a professional SEO blog writer.
-Generate long-form, well-structured markdown articles.
-Never stop mid sentence.
-Never summarize unless asked.
-`,
-      },
-      {
-        role: "user",
-        content: `
-Write a comprehensive article about: "${prompt}"
-
-Requirements:
-- Minimum ${length} words
-- Use proper markdown headings
-- Engaging introduction
-- Detailed sections
-- Practical examples
-- Strong conclusion
-`,
-      },
-    ];
-
-    let response = await AI.chat.completions.create({
+    let response = await safeAIRequest({
       model: "gemini-2.5-flash",
-      messages: baseMessages,
-      temperature: 0.8,
-      max_tokens: maxTokens,
+      messages: [
+        {
+          role: "system",
+          content: "Write full SEO article. Never cut mid sentence.",
+        },
+        {
+          role: "user",
+          content: `Write ${length}+ words article on: ${prompt}`,
+        },
+      ],
+      max_tokens: Math.min(length * 3, 8000),
     });
 
     let content = response.choices[0].message.content;
-    let finishReason = response.choices[0].finish_reason;
+    let finish = response.choices[0].finish_reason;
 
-    // ✅ Auto-continue until fully complete
-    while (finishReason === "length") {
-      const continuation = await AI.chat.completions.create({
+    let loop = 0;
+
+    while (finish === "length" && loop < 3) {
+      loop++;
+      await delay(1200);
+
+      const cont = await safeAIRequest({
         model: "gemini-2.5-flash",
         messages: [
-          {
-            role: "system",
-            content:
-              "Continue the article seamlessly. Do not repeat anything.",
-          },
-          {
-            role: "assistant",
-            content,
-          },
-          {
-            role: "user",
-            content: "Continue from exactly where you stopped.",
-          },
+          { role: "assistant", content },
+          { role: "user", content: "Continue" },
         ],
-        temperature: 0.8,
-        max_tokens: 2000,
+        max_tokens: 1500,
       });
 
-      content += continuation.choices[0].message.content;
-      finishReason = continuation.choices[0].finish_reason;
+      content += cont.choices[0].message.content;
+      finish = cont.choices[0].finish_reason;
     }
 
-    // ✅ Save to DB
-    await sql`
-      INSERT INTO creations (user_id, prompt, content, type)
-      VALUES (${userId}, ${prompt}, ${content}, 'article')
-    `;
+    await saveToDB(userId, prompt, content, "article");
+    await updateUsage(userId, free_usage, plan);
 
-    if (plan !== "premium") {
-      await clerkClient.users.updateUserMetadata(userId, {
-        privateMetadata: {
-          free_usage: free_usage + 1,
-        },
-      });
+    const email = await getUserEmail(userId);
+    if (email) {
+      await sendEmail(email, "Article Ready", `<p>${content}</p>`);
     }
 
-    const userEmail = await getUserEmail(userId);
-
-    await sendEmail(
-      userEmail,
-      "📝 Your AI-Generated Article is Ready",
-      `<h2>Your Article</h2>
-       <p><strong>Prompt:</strong> ${prompt}</p>
-       <hr/>
-       <div>${content}</div>`
-    );
-
-    return res.json({ success: true, content });
-  } catch (error) {
-    console.log(error);
-    return res.json({
+    res.json({ success: true, content });
+  } catch (err) {
+    res.json({
       success: false,
-      message: error.message,
+      message:
+        err.status === 429 ? "Too many requests, try later" : err.message,
     });
   }
 };
 
-
-// export const generateBlogTitle = async (req, res) => {
-//     try {
-//         const { userId } = req.auth();
-//         const { prompt } = req.body;
-//         const plan = req.plan;
-//         const free_usage = req.free_usage;
-
-//         if (plan !== 'premium' && free_usage >= 10) {
-//             return res.json({ success: false, message: "Limit reached. Upgrade to continue." });
-//         }
-
-//         const response = await AI.chat.completions.create({
-//             model: "gemini-2.5-flash",
-//             messages: [
-//                 { role: "user", content: prompt },],
-//             temperature: 0.7,
-//             max_tokens: 100,
-//         });
-
-//         const content = response.choices[0].message.content;
-
-//         await sql`
-//           INSERT INTO creations (user_id, prompt, content, type)
-//           VALUES (${userId}, ${prompt}, ${content}, 'blog-title')
-//         `;
-
-//         if (plan !== 'premium') {
-//             await clerkClient.users.updateUserMetadata(userId, {
-//                 privateMetadata: {
-//                     free_usage: free_usage + 1
-//                 }
-//             });
-//         }
-
-//         const userEmail = await getUserEmail(userId);
-//         await sendEmail(
-//             userEmail,
-//             "📝 Your AI-Generated Blog Title is Ready",
-//             `<h2>Blog Title Result</h2>
-//        <p><strong>Prompt:</strong> ${prompt}</p>
-//        <hr/>
-//        <p>${content}</p>`
-//         );
-
-//         res.json({ success: true, content });
-
-//     } catch (error) {
-//         console.log(error.message);
-//         res.json({
-//             success: false,
-//             message: error.message
-//         });
-//     }
-// };
-
+/* -------------------- 🧠 BLOG TITLE -------------------- */
 
 export const generateBlogTitle = async (req, res) => {
   try {
     const { userId } = req.auth();
     const { prompt } = req.body;
-    const plan = req.plan;
-    const free_usage = req.free_usage;
+    const { plan, free_usage } = req;
 
-    // ✅ Limit check
-    // if (plan !== "premium" && free_usage >= 10) {
-    //   return res.json({
-    //     success: false,
-    //     message: "Limit reached. Upgrade to continue.",
-    //   });
-    // }
+    if (!prompt)
+      return res.json({ success: false, message: "Prompt required" });
 
-    if (!prompt || !prompt.trim()) {
-      return res.json({
-        success: false,
-        message: "Prompt is required.",
-      });
-    }
+    if (checkLimit(plan, free_usage))
+      return res.json({ success: false, message: "Limit reached" });
 
-    // ✅ STEP 1: Generate titles
-    let response = await AI.chat.completions.create({
+    const response = await safeAIRequest({
       model: "gemini-2.5-flash",
       messages: [
         {
           role: "system",
-          content: `
-You are a professional SEO blog title generator.
-
-Generate EXACTLY 5 blog titles.
-
-RULES:
-- Each title MUST be complete (never cut words)
-- Each title on new line
-- No numbering
-- No quotes
-- 10–15 words each
-- Highly engaging and SEO optimized
-- If tokens end, COMPLETE the current title first
-`,
+          content: "Generate 5 SEO blog titles. Each in new line.",
         },
-        {
-          role: "user",
-          content: prompt,
-        },
+        { role: "user", content: prompt },
       ],
-      temperature: 0.9,
-      max_tokens: 500, // 🔥 increased
+      max_tokens: 200,
     });
 
-    let content = response.choices[0].message.content;
-    let finishReason = response.choices[0].finish_reason;
-
-    // ✅ STEP 2: Auto continue if cut
-    while (finishReason === "length") {
-      const continuation = await AI.chat.completions.create({
-        model: "gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: "Continue remaining blog titles. Do not repeat.",
-          },
-          {
-            role: "assistant",
-            content: content,
-          },
-          {
-            role: "user",
-            content: "Continue",
-          },
-        ],
-        max_tokens: 200,
-      });
-
-      content += continuation.choices[0].message.content;
-      finishReason = continuation.choices[0].finish_reason;
-    }
-
-    // ✅ STEP 3: Clean titles properly
-    let titles = content
+    const titles = response.choices[0].message.content
       .split("\n")
-      .map((t) => t.trim())
-      .filter(
-        (t) =>
-          t.length > 10 &&
-          !t.endsWith(":") &&
-          !t.match(/^[\-\d\.]+$/)
-      );
+      .filter(Boolean)
+      .slice(0, 5);
 
-    // ✅ STEP 4: fallback if AI fails
-    if (titles.length < 3) {
-      titles = [
-        `Ultimate Guide to ${prompt} for Beginners`,
-        `Top Secrets to Master ${prompt} Easily`,
-        `Best Tips and Tricks for ${prompt} in 2026`,
-        `How to Get Started with ${prompt} Step by Step`,
-        `Everything You Need to Know About ${prompt}`,
-      ];
-    }
+    const content = titles.join("\n");
 
-    // ✅ Only 5 titles
-    titles = titles.slice(0, 5);
+    await saveToDB(userId, prompt, content, "blog-title");
+    await updateUsage(userId, free_usage, plan);
 
-    const finalContent = titles.join("\n");
-
-    // ✅ Save to DB
-    await sql`
-      INSERT INTO creations (user_id, prompt, content, type)
-      VALUES (${userId}, ${prompt}, ${finalContent}, 'blog-title')
-    `;
-
-    // ✅ Update usage
-    if (plan !== "premium") {
-      await clerkClient.users.updateUserMetadata(userId, {
-        privateMetadata: {
-          free_usage: free_usage + 1,
-        },
-      });
-    }
-
-    // ✅ Send email
-    const userEmail = await getUserEmail(userId);
-    await sendEmail(
-      userEmail,
-      "📝 Your AI-Generated Blog Titles",
-      `
-      <h2>Your Blog Titles</h2>
-      <p><strong>Prompt:</strong> ${prompt}</p>
-      <hr/>
-      ${titles.map((t) => `<p>• ${t}</p>`).join("")}
-      `
-    );
-
-    return res.json({ success: true, content: finalContent });
-
-  } catch (error) {
-    console.log("BLOG TITLE ERROR:", error);
-    return res.json({
-      success: false,
-      message: error.message,
-    });
+    res.json({ success: true, content });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
   }
 };
 
+/* -------------------- 🎨 IMAGE GENERATION -------------------- */
 
 export const generateImage = async (req, res) => {
-    try {
-        const { userId } = req.auth();
-        const { prompt, publish } = req.body;
-        const plan = req.plan;
-        const free_usage = req.free_usage;
+  try {
+    const { userId } = req.auth();
+    const { prompt, publish } = req.body;
+    const { plan, free_usage } = req;
 
-        if (plan !== 'premium' && free_usage >= 10) {
-            return res.json({ success: false, message: "This feature is only available for premium subscriptions" });
-        }
+    if (checkLimit(plan, free_usage))
+      return res.json({ success: false, message: "Upgrade required" });
 
-        const formData = new FormData()
-        formData.append('prompt', prompt)
-        const { data } = await axios.post("https://clipdrop-api.co/text-to-image/v1", formData, {
-            headers: { 'x-api-key': process.env.CLIPDROP_API_KEY, },
-            responseType: "arraybuffer",
-        })
+    const formData = new FormData();
+    formData.append("prompt", prompt);
 
-        const base64Image = `data:image/png;base64,${Buffer.from(data, 'binary').toString('base64')}`;
+    const { data } = await axios.post(
+      "https://clipdrop-api.co/text-to-image/v1",
+      formData,
+      {
+        headers: { "x-api-key": process.env.CLIPDROP_API_KEY },
+        responseType: "arraybuffer",
+      }
+    );
 
-        const { secure_url } = await cloudinary.uploader.upload(base64Image)
+    const base64 = Buffer.from(data).toString("base64");
+    const { secure_url } = await cloudinary.uploader.upload(
+      `data:image/png;base64,${base64}`
+    );
 
-        await sql` INSERT INTO creations (user_id, prompt, content, type, publish)
-VALUES (${userId}, ${prompt}, ${secure_url}, 'image', ${publish ?? false})
-`;
+    await saveToDB(userId, prompt, secure_url, "image", publish);
+    await updateUsage(userId, free_usage, plan);
 
-        const userEmail = await getUserEmail(userId);
-        await sendEmail(
-            userEmail,
-            "🖼️ Your AI-Generated Image is Ready",
-            `<h2>Your Image</h2>
-       <p><strong>Prompt:</strong> ${prompt}</p>
-       <img src="${secure_url}" />`
-        );
-
-        res.json({ success: true, content: secure_url });
-
-    } catch (error) {
-        console.log(error.message);
-        res.json({
-            success: false,
-            message: error.message
-        });
-    }
+    res.json({ success: true, content: secure_url });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
 };
+
+/* -------------------- 🧽 BG REMOVE -------------------- */
+
 export const removeImageBackground = async (req, res) => {
-    try {
-        const { userId } = req.auth();
-        const image = req.file;
-        const plan = req.plan;
-        const free_usage = req.free_usage;
+  try {
+    const { userId } = req.auth();
+    const image = req.file;
 
-        if (plan !== 'premium' && free_usage >= 10) {
-            return res.json({ success: false, message: "This feature is only available for premium subscriptions" });
-        }
+    const { secure_url } = await cloudinary.uploader.upload(image.path, {
+      transformation: [{ effect: "background_removal" }],
+    });
 
-        const { secure_url } = await cloudinary.uploader.upload(image.path, {
-            transformation: [
-                {
-                    effect: 'background_removal',
-                    background_removal: 'remove_the_background'
-                }
-            ]
-        })
+    await saveToDB(userId, "bg removed", secure_url, "image");
 
-        await sql` INSERT INTO creations (user_id, prompt, content, type)
-VALUES (${userId}, 'Remove background from image', ${secure_url}, 'image')
-`;
-
-
-        res.json({ success: true, content: secure_url });
-
-    } catch (error) {
-        console.log(error.message);
-        res.json({
-            success: false,
-            message: error.message
-        });
-    }
+    res.json({ success: true, content: secure_url });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
 };
+
+/* -------------------- ✂️ OBJECT REMOVE -------------------- */
+
 export const removeImageObject = async (req, res) => {
-    try {
-        const { userId } = req.auth();
-        const { object } = req.body;
-        const image = req.file;
-        const plan = req.plan;
-        const free_usage = req.free_usage;
+  try {
+    const { userId } = req.auth();
+    const { object } = req.body;
+    const image = req.file;
 
-        if (plan !== 'premium' && free_usage >= 10) {
-            return res.json({ success: false, message: "This feature is only available for premium subscriptions" });
-        }
+    const { public_id } = await cloudinary.uploader.upload(image.path);
 
+    const url = cloudinary.url(public_id, {
+      transformation: [{ effect: `gen_remove:${object}` }],
+    });
 
+    await saveToDB(userId, `removed ${object}`, url, "image");
 
-        const { public_id } = await cloudinary.uploader.upload(image.path)
-
-        const imageUrl = cloudinary.url(public_id, {
-            transformation: [{ effect: `gen_remove:${object}` }],
-            resource_type: 'image'
-        })
-
-        await sql` INSERT INTO creations (user_id, prompt, content, type)
-VALUES (${userId}, ${`Removed ${object} from image`}, ${imageUrl}, 'image')
-`;
-
-        res.json({ success: true, content: imageUrl })
-
-    } catch (error) {
-        console.log(error.message);
-        res.json({
-            success: false,
-            message: error.message
-        });
-    }
+    res.json({ success: true, content: url });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
 };
+
+/* -------------------- 📄 RESUME REVIEW -------------------- */
 
 export const resumeReview = async (req, res) => {
-    try {
-        const { userId } = req.auth();
-        const resume = req.file;
-        const plan = req.plan;
-        const free_usage = req.free_usage;
+  try {
+    const { userId } = req.auth();
+    const file = req.file;
 
+    if (file.size > 5 * 1024 * 1024)
+      return res.json({ success: false, message: "File too large" });
 
-        if (plan !== 'premium' && free_usage >= 10) {
-            return res.json({ success: false, message: "This feature is only available for premium subscriptions" });
-        }
+    const buffer = fs.readFileSync(file.path);
+    const pdf = await pdfParse(buffer);
 
-        if (resume.size > 5 * 1024 * 1024) {
-            return res.json({ success: false, message: "Resume file size exceeds allowed size (5MB)." })
-        }
+    const response = await safeAIRequest({
+      model: "gemini-2.5-flash",
+      messages: [
+        {
+          role: "user",
+          content: `Review this resume:\n${pdf.text}`,
+        },
+      ],
+      max_tokens: 1000,
+    });
 
-        const dataBuffer = fs.readFileSync(resume.path)
-        // const pdfData = await pdf(dataBuffer)
-        const pdfData = await pdfParse(dataBuffer);
-        console.log(pdfData.text);
+    const content = response.choices[0].message.content;
 
-        const prompt = `Review the following resume and provide constructive
-feedback on its strengths, weaknesses, and areas for improvement. Resume
-Content: \n\n${pdfData.text}`
+    await saveToDB(userId, "resume review", content, "resume-review");
 
-        const response = await AI.chat.completions.create({
-            model: "gemini-2.5-flash",
-            messages: [{ role: "user", content: prompt, }],
-            temperature: 0.7,
-            max_tokens: 1000,
-        });
-
-        const content = response.choices[0].message.content
-
-        await sql`
-  INSERT INTO creations (user_id, prompt, content, type)
-  VALUES (
-    ${userId}, 
-    ${'Review the uploaded resume'}, 
-    ${content}, 
-    ${'resume-review'}
-  )
-`;
-
-
-        const userEmail = await getUserEmail(userId);
-        await sendEmail(
-            userEmail,
-            "📄 Your Resume Review is Ready",
-            `<h2>Resume Review</h2>
-       <p>${content}</p>`
-        );
-        res.json({ success: true, content })
-
-    } catch (error) {
-        console.log(error.message);
-        res.json({
-            success: false,
-            message: error.message
-        });
-    }
+    res.json({ success: true, content });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
 };
 
