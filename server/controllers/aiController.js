@@ -308,7 +308,7 @@ STRICT RULES:
         },
       ],
       temperature: 0.9,
-      max_tokens: 120,
+      max_tokens: 200,
     });
 
     let content = response.choices?.[0]?.message?.content || "";
@@ -331,7 +331,7 @@ STRICT RULES:
           },
           { role: "user", content: prompt },
         ],
-        max_tokens: 120,
+        max_tokens: 200,
       });
 
       titles = retry.choices[0].message.content
