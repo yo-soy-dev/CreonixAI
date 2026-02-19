@@ -39,7 +39,7 @@ export const generateArticle = async (req, res) => {
     }
 
     // 🔥 Convert words → tokens properly
-    const maxTokens = Math.floor(length * 1.6); 
+    const maxTokens = Math.floor(length * 2.2); 
     // Example: 1200 words ≈ 1900 tokens
 
     const response = await AI.chat.completions.create({
@@ -71,7 +71,7 @@ Requirements:
         },
       ],
       temperature: 0.8,
-      max_tokens: maxTokens,
+      max_output_tokens: maxTokens,
     });
 
         // const response = await AI.chat.completions.create({
