@@ -126,9 +126,8 @@
 
 
 
-
 import React, { useState } from "react";
-import { Sparkles, Edit } from "lucide-react";
+import { Sparkles, Edit, Copy } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "@clerk/clerk-react";
 import toast from "react-hot-toast";
@@ -137,13 +136,13 @@ import Markdown from "react-markdown";
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
 const WriteArticle = () => {
-  const articleLengthOptions = [
-    { words: 800, label: "Short (500–800 words)" },
-    { words: 1200, label: "Medium (800–1200 words)" },
-    { words: 1600, label: "Long (1200+ words)" },
+  const articleLength = [
+    { length: 800, text: "Short (500-800 words)" },
+    { length: 1200, text: "Medium (800-1200 words)" },
+    { length: 1600, text: "Long (1200+ words)" },
   ];
 
-  const [selectedLength, setSelectedLength] = useState(articleLengthOptions[0]);
+  const [selectedLength, setSelectedLength] = useState(articleLength[0]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState("");
@@ -158,36 +157,46 @@ const WriteArticle = () => {
       return;
     }
 
+    if (loading) return;
+
     try {
       setLoading(true);
+      setContent(""); // clear old result
+
+      const token = await getToken();
 
       const { data } = await axios.post(
         "/api/ai/generate-article",
         {
-          prompt: input.trim(),     // only topic
-          length: selectedLength.words, // word count
+          prompt: input.trim(),
+          length: selectedLength.length,
         },
         {
-          headers: {
-            Authorization: `Bearer ${await getToken()}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       if (data.success) {
         setContent(data.content);
+        toast.success("Article generated successfully!");
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Something went wrong");
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error("Failed to generate article");
     } finally {
       setLoading(false);
     }
   };
 
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(content);
+    toast.success("Copied to clipboard!");
+  };
+
   return (
     <div className="h-full overflow-y-scroll p-6 flex items-start flex-wrap gap-4 text-slate-700">
+      {/* FORM */}
       <form
         onSubmit={onSubmitHandler}
         className="w-full max-w-lg p-4 bg-white rounded-lg border border-gray-200"
@@ -203,23 +212,23 @@ const WriteArticle = () => {
           value={input}
           type="text"
           className="w-full p-2 px-3 mt-2 outline-none text-sm rounded-md border border-gray-300"
-          placeholder="The future of artificial intelligence..."
+          placeholder="The future of artificial intelligence is..."
           required
         />
 
         <p className="mt-4 text-sm font-medium">Article Length</p>
         <div className="mt-3 flex gap-3 flex-wrap">
-          {articleLengthOptions.map((item, index) => (
+          {articleLength.map((item, index) => (
             <span
-              key={index}
               onClick={() => setSelectedLength(item)}
-              className={`text-xs px-4 py-1 border rounded-full cursor-pointer ${
-                selectedLength.words === item.words
-                  ? "bg-yellow-50 text-yellow-700"
-                  : "text-gray-500 border-gray-300"
+              key={index}
+              className={`text-xs px-4 py-1 border rounded-full cursor-pointer transition ${
+                selectedLength.text === item.text
+                  ? "bg-yellow-50 text-yellow-700 border-yellow-300"
+                  : "text-gray-500 border-gray-300 hover:bg-gray-50"
               }`}
             >
-              {item.label}
+              {item.text}
             </span>
           ))}
         </div>
@@ -234,23 +243,41 @@ const WriteArticle = () => {
           ) : (
             <Edit className="w-5" />
           )}
-          Generate Article
+          {loading ? "Generating..." : "Generate article"}
         </button>
       </form>
 
+      {/* RESULT */}
       <div className="w-full max-w-lg p-4 bg-white rounded-lg flex flex-col border border-gray-200 min-h-96 max-h-[600px]">
-        <div className="flex items-center gap-3">
-          <Edit className="w-5 h-5 text-[#B8E544]" />
-          <h1 className="text-xl font-semibold">Generated Article</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Edit className="w-5 h-5 text-[#B8E544]" />
+            <h1 className="text-xl font-semibold">Generated article</h1>
+          </div>
+
+          {content && (
+            <button
+              onClick={copyToClipboard}
+              className="flex items-center gap-1 text-xs bg-gray-100 px-3 py-1 rounded-md hover:bg-gray-200"
+            >
+              <Copy className="w-3 h-3" />
+              Copy
+            </button>
+          )}
         </div>
 
         {!content ? (
-          <div className="flex-1 flex justify-center items-center text-gray-400 text-sm">
-            Enter a topic and click “Generate Article” to get started
+          <div className="flex-1 flex justify-center items-center">
+            <div className="text-sm flex flex-col items-center gap-5 text-gray-400">
+              <Edit className="w-9 h-9" />
+              <p>Enter a topic and click “Generate article” to get started</p>
+            </div>
           </div>
         ) : (
           <div className="mt-3 h-full overflow-y-scroll text-sm text-slate-600">
-            <Markdown>{content}</Markdown>
+            <div className="prose max-w-none">
+              <Markdown>{content}</Markdown>
+            </div>
           </div>
         )}
       </div>
@@ -259,4 +286,3 @@ const WriteArticle = () => {
 };
 
 export default WriteArticle;
-
