@@ -52,6 +52,7 @@ You are a professional SEO blog writer.
 Always generate detailed, long-form, well-structured articles.
 Use proper markdown formatting with headings.
 Never generate short summaries.
+Never stop mid-sentence.
 `,
         },
         {
@@ -71,7 +72,7 @@ Requirements:
         },
       ],
       temperature: 0.8,
-      max_output_tokens: maxTokens,
+      max_tokens: maxTokens,
     });
 
         // const response = await AI.chat.completions.create({
