@@ -24,7 +24,20 @@ const BlogTitle = () => {
     e.preventDefault();
     try {
       setLoading(true);
-      const prompt = `Generate a blog title for the keyword ${input} in the category ${selectedCategory}`;
+      // const prompt = `Generate a blog title for the keyword ${input} in the category ${selectedCategory}`;
+       const prompt = `
+Generate 5 SEO-optimized blog titles.
+
+Keyword: ${input}
+Category: ${selectedCategory}
+
+Rules:
+- One title per line
+- No numbering
+- No quotes
+- Must be complete
+`;
+      
       const { data } = await axios.post(
         '/api/ai/generate-blog-title',
         { prompt },
