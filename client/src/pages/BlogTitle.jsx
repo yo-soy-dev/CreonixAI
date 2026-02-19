@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import Markdown from 'react-markdown';
+// import Markdown from 'react-markdown';
 
 axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -119,7 +119,25 @@ Rules:
           </div>
         ) : (
           <div className='mt-3 h-full overflow-y-scroll text-sm text-slate-600'>
-            <Markdown>{content}</Markdown>
+            {/* <Markdown>{content}</Markdown> */}
+            {content.split("\n").map((title, i) => (
+    <div
+      key={i}
+      className="p-3 border rounded-lg mb-2 cursor-pointer hover:bg-gray-50 transition flex justify-between items-center"
+    >
+      <span>{title}</span>
+
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(title);
+          toast.success("Copied!");
+        }}
+        className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200"
+      >
+        Copy
+      </button>
+    </div>
+  ))}
           </div>
         )}
       </div>
