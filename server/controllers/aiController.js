@@ -401,7 +401,7 @@ feedback on its strengths, weaknesses, and areas for improvement. Resume
 Content: \n\n${pdfData.text}`
 
         const response = await AI.chat.completions.create({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             messages: [{ role: "user", content: prompt, }],
             temperature: 0.7,
             max_tokens: 1000,
